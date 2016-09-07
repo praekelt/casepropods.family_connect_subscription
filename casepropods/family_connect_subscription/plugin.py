@@ -1,3 +1,4 @@
+from casepro.cases.models import Case
 from casepro.pods import Pod, PodConfig, PodPlugin
 from confmodel import fields
 from seed_services_client.stage_based_messaging \
@@ -15,11 +16,19 @@ class SubscriptionPod(Pod):
     def read_data(self, params):
         url = self.config.url
         token = self.config.token
-        stage_based_messaging_api = StageBasedMessagingApiClient(token, url)
+
+        # Get contact idenity
+        case_id = params["case_id"]
+        case = Case.objects.get(pk=case_id)
         params = {
-            'identity': "C-002"
+            'identity': case.contact.uuid
         }
+
+        # Start a session with the StageBasedMessagingApiClient
+        stage_based_messaging_api = StageBasedMessagingApiClient(token, url)
         data = stage_based_messaging_api.get_subscriptions(params)["results"]
+
+        # Format and return data
         content = {"items": []}
         for subscription in data:
             message_set_id = subscription['messageset']
