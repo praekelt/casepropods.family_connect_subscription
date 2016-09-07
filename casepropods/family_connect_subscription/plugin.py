@@ -1,13 +1,18 @@
 from casepro.pods import Pod, PodConfig, PodPlugin
+from confmodel import fields
 
 
 class SubscriptionPodConfig(PodConfig):
-    pass
+    url = fields.ConfigText("URL to query for the registration data",
+                            required=True)
+    token = fields.ConfigText("Authentication token for registration endpoint",
+                              required=True)
 
 
 class SubscriptionPod(Pod):
     def read_data(self, params):
-        pass
+        url = self.config.url
+        token = self.config.token
 
 
 class SubscriptionPlugin(PodPlugin):
