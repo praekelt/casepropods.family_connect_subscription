@@ -1,6 +1,7 @@
 from casepro.cases.models import Case
 from casepro.pods import Pod, PodConfig, PodPlugin
 from confmodel import fields
+from demands import HTTPServiceError
 from seed_services_client.stage_based_messaging \
     import StageBasedMessagingApiClient
 
@@ -26,7 +27,10 @@ class SubscriptionPod(Pod):
 
         # Start a session with the StageBasedMessagingApiClient
         stage_based_messaging_api = StageBasedMessagingApiClient(token, url)
-        response = stage_based_messaging_api.get_subscriptions(params)
+        try:
+            response = stage_based_messaging_api.get_subscriptions(params)
+        except HTTPServiceError as e:
+            return {"items": [{"name": "Error", "value": e.details["detail"]}]}
 
         # Format and return data
         if response['count'] < 1:
