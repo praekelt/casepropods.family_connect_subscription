@@ -22,8 +22,25 @@ class SubscriptionPod(Pod):
         data = stage_based_messaging_api.get_subscriptions(params)["results"]
         content = {"items": []}
         for subscription in data:
-            for k in subscription:
-                content['items'].append({"name": k, "value": subscription[k]})
+            message_set_id = subscription['messageset']
+            message_set = stage_based_messaging_api.get_messageset(
+                message_set_id)
+            if message_set:
+                content['items'].append({
+                    "name": "Message Set", "value": message_set["short_name"]})
+            content['items'].append({
+                "name": "Next Sequence Number",
+                "value": subscription['next_sequence_number']})
+            schedule_id = subscription['schedule']
+            schedule = stage_based_messaging_api.get_schedule(schedule_id)
+            # TODO: figure out how to format the schedule
+            content['items'].append({"name": "Schedule", "value": ""})
+            content['items'].append({
+                "name": "Active",
+                "value": subscription['active']})
+            content['items'].append({
+                "name": "Completed",
+                "value": subscription['completed']})
         return content
 
 
