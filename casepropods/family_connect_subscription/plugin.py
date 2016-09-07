@@ -26,9 +26,12 @@ class SubscriptionPod(Pod):
 
         # Start a session with the StageBasedMessagingApiClient
         stage_based_messaging_api = StageBasedMessagingApiClient(token, url)
-        data = stage_based_messaging_api.get_subscriptions(params)["results"]
+        response = stage_based_messaging_api.get_subscriptions(params)
 
         # Format and return data
+        if response['count'] < 1:
+            return {"items": [{"name": "No subscriptions", "value": ""}]}
+        data = response["results"]
         content = {"items": []}
         for subscription in data:
             message_set_id = subscription['messageset']
