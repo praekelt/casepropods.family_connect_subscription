@@ -78,9 +78,9 @@ class SubscriptionPodTest(BaseCasesTest):
         headers = {'Content-Type': "application/json"}
         resp = {
             "id": 1,
-            "minute": "*",
-            "hour": "8*",
-            "day_of_week": "*",
+            "minute": "0",
+            "hour": "8",
+            "day_of_week": "1,2",
             "day_of_month": "*",
             "month_of_year": "*"
         }
@@ -134,7 +134,7 @@ class SubscriptionPodTest(BaseCasesTest):
         self.assertEqual(result, {"items": [
             {"name": "Message Set", "value": "test_set"},
             {"name": "Next Sequence Number", "value": 1},
-            {"name": "Schedule", "value": ""},
+            {"name": "Schedule", "value": "At 08:00 every Monday and Tuesday"},
             {"name": "Active", "value": True},
             {"name": "Completed", "value": False},
         ]})

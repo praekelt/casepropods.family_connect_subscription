@@ -1,3 +1,4 @@
+from pretty_cron import prettify_cron
 from casepro.cases.models import Case
 from casepro.pods import Pod, PodConfig, PodPlugin
 from confmodel import fields
@@ -49,8 +50,9 @@ class SubscriptionPod(Pod):
                 "value": subscription['next_sequence_number']})
             schedule_id = subscription['schedule']
             schedule = stage_based_messaging_api.get_schedule(schedule_id)
-            # TODO: figure out how to format the schedule
-            content['items'].append({"name": "Schedule", "value": ""})
+            content['items'].append({
+                "name": "Schedule",
+                "value": self.format_schedule(schedule)})
             content['items'].append({
                 "name": "Active",
                 "value": subscription['active']})
@@ -58,6 +60,12 @@ class SubscriptionPod(Pod):
                 "name": "Completed",
                 "value": subscription['completed']})
         return content
+
+    def format_schedule(self, schedule):
+        cron_schedule = "%s %s %s %s %s" % (
+            schedule['minute'], schedule['hour'], schedule['day_of_month'],
+            schedule['month_of_year'], schedule['day_of_week'])
+        return prettify_cron(cron_schedule)
 
 
 class SubscriptionPlugin(PodPlugin):
