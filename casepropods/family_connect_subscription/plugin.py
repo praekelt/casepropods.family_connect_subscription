@@ -39,26 +39,33 @@ class SubscriptionPod(Pod):
         data = response["results"]
         content = {"items": []}
         for subscription in data:
+            subscription_data = {"rows": []}
+            # Add the messageset
             message_set_id = subscription['messageset']
             message_set = stage_based_messaging_api.get_messageset(
                 message_set_id)
             if message_set:
-                content['items'].append({
+                subscription_data['rows'].append({
                     "name": "Message Set", "value": message_set["short_name"]})
-            content['items'].append({
+            # Add the sequence number
+            subscription_data['rows'].append({
                 "name": "Next Sequence Number",
                 "value": subscription['next_sequence_number']})
+            # Add the schedule
             schedule_id = subscription['schedule']
             schedule = stage_based_messaging_api.get_schedule(schedule_id)
-            content['items'].append({
+            subscription_data['rows'].append({
                 "name": "Schedule",
                 "value": self.format_schedule(schedule)})
-            content['items'].append({
+            # Add the active flag
+            subscription_data['rows'].append({
                 "name": "Active",
                 "value": subscription['active']})
-            content['items'].append({
+            # Add the completed flag
+            subscription_data['rows'].append({
                 "name": "Completed",
                 "value": subscription['completed']})
+            content['items'].append(subscription_data)
         return content
 
     def format_schedule(self, schedule):
@@ -74,3 +81,6 @@ class SubscriptionPlugin(PodPlugin):
     pod_class = SubscriptionPod
     config_class = SubscriptionPodConfig
     title = 'Subscription Pod'
+    directive = 'subscription-pod'
+    scripts = ['subscription_pod_directives.js']
+    styles = ['subscription_pod.css']
