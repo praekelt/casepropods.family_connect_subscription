@@ -132,11 +132,14 @@ class SubscriptionPodTest(BaseCasesTest):
         auth_header = responses.calls[0].request.headers['Authorization']
         self.assertEqual(auth_header, "Token test_token")
         self.assertEqual(result, {"items": [
-            {"name": "Message Set", "value": "test_set"},
-            {"name": "Next Sequence Number", "value": 1},
-            {"name": "Schedule", "value": "At 08:00 every Monday and Tuesday"},
-            {"name": "Active", "value": True},
-            {"name": "Completed", "value": False},
+            {"rows": [
+                {"name": "Message Set", "value": "test_set"},
+                {"name": "Next Sequence Number", "value": 1},
+                {"name": "Schedule",
+                 "value": "At 08:00 every Monday and Tuesday"},
+                {"name": "Active", "value": True},
+                {"name": "Completed", "value": False},
+            ]}
         ]})
 
     @responses.activate
