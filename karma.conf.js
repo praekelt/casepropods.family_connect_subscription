@@ -6,8 +6,12 @@ module.exports = function(config) {
 
     files: [
       'angular.min.js',
-      'subscription_pod_directives.js',
+      'angular-animate.min.js',
+      'angular-sanitize.min.js',
+      'angular-mocks.js',
       'subscription_pod_template.html',
+      'init.js',
+      'subscription_pod_directives.js',
       'test-pod.coffee',
     ],
 
@@ -15,7 +19,13 @@ module.exports = function(config) {
 
     preprocessors: {
           '**/*.coffee': ['coffee'],
+          '**/*.html': ['ng-html2js']
         },
+        
+    ngHtml2JsPreprocessor: {
+      moduleName: 'templates'
+    },
+
 
     browsers: ['PhantomJS'],
 
