@@ -17,13 +17,13 @@ class SubscriptionPodTest(BaseCasesTest):
         self.base_url = 'http://example.com/'
 
         self.pod = SubscriptionPod(
-                apps.get_app_config('family_connect_subscription_pod'),
-                SubscriptionPodConfig({
-                    'index': 23,
-                    'title': "My subscription Pod",
-                    'url': "http://example.com/",
-                    'token': "test_token",
-                }))
+            apps.get_app_config('family_connect_subscription_pod'),
+            SubscriptionPodConfig({
+                'index': 23,
+                'title': "My subscription Pod",
+                'url': "http://example.com/",
+                'token': "test_token",
+            }))
 
     def subscription_callback_no_matches(self, request):
         headers = {'Content-Type': "application/json"}
