@@ -38,6 +38,7 @@ class SubscriptionPod(Pod):
             return {"items": [{"name": "No subscriptions", "value": ""}]}
         data = response["results"]
         content = {"items": []}
+        active_sub_ids = []
         for subscription in data:
             subscription_data = {"rows": []}
             # Add the messageset
@@ -61,11 +62,28 @@ class SubscriptionPod(Pod):
             subscription_data['rows'].append({
                 "name": "Active",
                 "value": subscription['active']})
+            if subscription['active']:
+                active_sub_ids.append(subscription['id'])
             # Add the completed flag
             subscription_data['rows'].append({
                 "name": "Completed",
                 "value": subscription['completed']})
             content['items'].append(subscription_data)
+
+        actions = []
+        if len(active_sub_ids) > 0:
+            cancel_action = {
+                'type': 'cancel_subs',
+                'name': 'Cancel All Subscriptions',
+                'confirm': True,
+                'busy_text': 'Cancelling...',
+                'payload': {
+                    'subscription_ids': active_sub_ids
+                }
+            }
+            actions.append(cancel_action)
+
+        content['actions'] = actions
         return content
 
     def format_schedule(self, schedule):
@@ -73,6 +91,25 @@ class SubscriptionPod(Pod):
             schedule['minute'], schedule['hour'], schedule['day_of_month'],
             schedule['month_of_year'], schedule['day_of_week'])
         return prettify_cron(cron_schedule)
+
+    def perform_action(self, type_, params):
+        url = self.config.url
+        token = self.config.token
+
+        # Start a session with the StageBasedMessagingApiClient
+        stage_based_messaging_api = StageBasedMessagingApiClient(token, url)
+
+        if type_ == "cancel_subs":
+            subscription_ids = params.get("subscription_ids", [])
+            params = {'active': False}
+            for subscription in subscription_ids:
+                try:
+                    stage_based_messaging_api.update_subscription(
+                        subscription, params)
+                except HTTPServiceError:
+                    return (False,
+                            {"message": "Failed to cancel some subscriptions"})
+            return (True, {"message": "cancelled all subscriptions"})
 
 
 class SubscriptionPlugin(PodPlugin):
