@@ -48,7 +48,8 @@ describe('directives:', () ->
 
       el = $compile('<subscription-pod/>')($rootScope)[0]
       $rootScope.$digest()
-
+      
+      console.log(el)
       expect(el.querySelector('.pod-title').textContent).toContain(
         'Subscription Information')
     )

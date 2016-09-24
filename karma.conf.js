@@ -2,24 +2,24 @@
 module.exports = function(config) {
   config.set({
 
-    basePath: './casepropods/family_connect_subscription/static',
+    basePath: 'casepropods/family_connect_subscription',
 
     files: [
-      'angular.min.js',
-      'angular-animate.min.js',
-      'angular-sanitize.min.js',
-      'angular-mocks.js',
-      'subscription_pod_template.html',
-      'init.js',
-      'subscription_pod_directives.js',
-      'test-pod.coffee',
+      'sitestatic/angular.min.js',
+      'sitestatic/angular-animate.min.js',
+      'sitestatic/angular-sanitize.min.js',
+      'sitestatic/angular-mocks.js',
+      'sitestatic/subscription_pod_template.html',
+      'sitestatic/init.js',
+      'sitestatic/subscription_pod_directives.js',
+      'sitestatic/test-pod.coffee',
     ],
 
     frameworks: ['jasmine'],
 
     preprocessors: {
           '**/*.coffee': ['coffee'],
-          '**/*.html': ['ng-html2js']
+          'sitestatic/*.html': ['ng-html2js']
         },
         
     ngHtml2JsPreprocessor: {
