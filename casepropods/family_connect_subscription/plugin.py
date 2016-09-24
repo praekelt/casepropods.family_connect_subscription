@@ -15,10 +15,16 @@ class SubscriptionPodConfig(PodConfig):
 
 
 class SubscriptionPod(Pod):
-    def read_data(self, params):
+    def __init__(self, pod_type, config):
+        super(SubscriptionPod, self).__init__(pod_type, config)
         url = self.config.url
         token = self.config.token
 
+        # Start a session with the StageBasedMessagingApiClient
+        self.stage_based_messaging_api = StageBasedMessagingApiClient(
+            token, url)
+
+    def read_data(self, params):
         # Get contact idenity
         case_id = params["case_id"]
         case = Case.objects.get(pk=case_id)
@@ -26,10 +32,8 @@ class SubscriptionPod(Pod):
             'identity': case.contact.uuid
         }
 
-        # Start a session with the StageBasedMessagingApiClient
-        stage_based_messaging_api = StageBasedMessagingApiClient(token, url)
         try:
-            response = stage_based_messaging_api.get_subscriptions(params)
+            response = self.stage_based_messaging_api.get_subscriptions(params)
         except HTTPServiceError as e:
             return {"items": [{"name": "Error", "value": e.details["detail"]}]}
 
@@ -43,7 +47,7 @@ class SubscriptionPod(Pod):
             subscription_data = {"rows": []}
             # Add the messageset
             message_set_id = subscription['messageset']
-            message_set = stage_based_messaging_api.get_messageset(
+            message_set = self.stage_based_messaging_api.get_messageset(
                 message_set_id)
             if message_set:
                 subscription_data['rows'].append({
@@ -54,7 +58,7 @@ class SubscriptionPod(Pod):
                 "value": subscription['next_sequence_number']})
             # Add the schedule
             schedule_id = subscription['schedule']
-            schedule = stage_based_messaging_api.get_schedule(schedule_id)
+            schedule = self.stage_based_messaging_api.get_schedule(schedule_id)
             subscription_data['rows'].append({
                 "name": "Schedule",
                 "value": self.format_schedule(schedule)})
@@ -93,18 +97,12 @@ class SubscriptionPod(Pod):
         return prettify_cron(cron_schedule)
 
     def perform_action(self, type_, params):
-        url = self.config.url
-        token = self.config.token
-
-        # Start a session with the StageBasedMessagingApiClient
-        stage_based_messaging_api = StageBasedMessagingApiClient(token, url)
-
         if type_ == "cancel_subs":
             subscription_ids = params.get("subscription_ids", [])
             params = {'active': False}
             for subscription in subscription_ids:
                 try:
-                    stage_based_messaging_api.update_subscription(
+                    self.stage_based_messaging_api.update_subscription(
                         subscription, params)
                 except HTTPServiceError:
                     return (False,
