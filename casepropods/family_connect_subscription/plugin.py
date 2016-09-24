@@ -129,7 +129,7 @@ class SubscriptionPod(Pod):
 
         if type_ == "full_opt_out":
             opted_out = False
-            subs_canceled = False
+            subs_cancelled = False
 
             # Create OptOut
             contact_id = params["contact_id"]
@@ -155,19 +155,19 @@ class SubscriptionPod(Pod):
 
             # Cancel Subscriptions
             subscription_ids = params.get("subscription_ids", [])
-            subs_canceled = self.cancel_subscriptions(subscription_ids)
+            subs_cancelled = self.cancel_subscriptions(subscription_ids)
 
             message = ""
             if opted_out:
                 message = "Opt-Out completed."
             else:
                 message = "An error occured while opting the user out."
-            if subs_canceled:
+            if subs_cancelled:
                 message += " All subscriptions cancelled."
             else:
                 message += " Failed to cancel some subscriptions"
 
-            return ((opted_out and subs_canceled), {"message": message})
+            return ((opted_out and subs_cancelled), {"message": message})
 
 
 class SubscriptionPlugin(PodPlugin):
