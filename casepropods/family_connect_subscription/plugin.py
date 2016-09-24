@@ -1,8 +1,11 @@
+import requests
 from pretty_cron import prettify_cron
 from casepro.cases.models import Case
+from casepro.contacts.models import Contact
 from casepro.pods import Pod, PodConfig, PodPlugin
 from confmodel import fields
 from demands import HTTPServiceError
+from django.conf import settings
 from seed_services_client.stage_based_messaging \
     import StageBasedMessagingApiClient
 
@@ -74,7 +77,15 @@ class SubscriptionPod(Pod):
                 "value": subscription['completed']})
             content['items'].append(subscription_data)
 
-        actions = []
+        actions = [{
+            'type': 'full_opt_out',
+            'name': 'Full Opt-Out',
+            'confirm': True,
+            'busy_text': 'Processing...',
+            'payload': {
+                'contact_id': case.contact.id
+            }
+        }]
         if len(active_sub_ids) > 0:
             cancel_action = {
                 'type': 'cancel_subs',
@@ -108,6 +119,31 @@ class SubscriptionPod(Pod):
                     return (False,
                             {"message": "Failed to cancel some subscriptions"})
             return (True, {"message": "cancelled all subscriptions"})
+
+        if type_ == "full_opt_out":
+            # TODO cancel subscriptions
+            contact_id = params["contact_id"]
+            contact = Contact.objects.get(pk=contact_id)
+            identity = contact.uuid
+
+            opt_out_url = settings.IDENTITY_API_ROOT + "api/v1/optout/"
+            identity_token = settings.IDENTITY_AUTH_TOKEN
+            headers = {
+                'Authorization': "Token " + identity_token,
+                'Content-Type': "application/json"
+            }
+            # TODO handle empty urns
+            addr_type, address = contact.urns[0].split(':', 1)
+            response = requests.post(
+                opt_out_url, headers=headers,
+                json={'identity': identity, 'optout_type': "stopall",
+                      'address_type': addr_type, 'address': address,
+                      'request_source': 'casepro'},
+            )
+            response.raise_for_status()
+            return (True,
+                    {"message":
+                        "opted the user out of any further communication"})
 
 
 class SubscriptionPlugin(PodPlugin):
