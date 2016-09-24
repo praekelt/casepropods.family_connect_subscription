@@ -83,7 +83,8 @@ class SubscriptionPod(Pod):
             'confirm': True,
             'busy_text': 'Processing...',
             'payload': {
-                'contact_id': case.contact.id
+                'contact_id': case.contact.id,
+                'subscription_ids': active_sub_ids
             }
         }]
         if len(active_sub_ids) > 0:
@@ -107,21 +108,30 @@ class SubscriptionPod(Pod):
             schedule['month_of_year'], schedule['day_of_week'])
         return prettify_cron(cron_schedule)
 
+    def cancel_subscriptions(self, subscription_ids):
+        params = {'active': False}
+        for subscription in subscription_ids:
+            try:
+                self.stage_based_messaging_api.update_subscription(
+                    subscription, params)
+            except HTTPServiceError:
+                return False
+        return True
+
     def perform_action(self, type_, params):
         if type_ == "cancel_subs":
             subscription_ids = params.get("subscription_ids", [])
-            params = {'active': False}
-            for subscription in subscription_ids:
-                try:
-                    self.stage_based_messaging_api.update_subscription(
-                        subscription, params)
-                except HTTPServiceError:
-                    return (False,
-                            {"message": "Failed to cancel some subscriptions"})
+            success = self.cancel_subscriptions(subscription_ids)
+            if not success:
+                return (False,
+                        {"message": "Failed to cancel some subscriptions"})
             return (True, {"message": "cancelled all subscriptions"})
 
         if type_ == "full_opt_out":
-            # TODO cancel subscriptions
+            opted_out = False
+            subs_canceled = False
+
+            # Create OptOut
             contact_id = params["contact_id"]
             contact = Contact.objects.get(pk=contact_id)
             identity = contact.uuid
@@ -140,10 +150,24 @@ class SubscriptionPod(Pod):
                       'address_type': addr_type, 'address': address,
                       'request_source': 'casepro'},
             )
-            response.raise_for_status()
-            return (True,
-                    {"message":
-                        "opted the user out of any further communication"})
+            if response.status_code == 201:
+                opted_out = True
+
+            # Cancel Subscriptions
+            subscription_ids = params.get("subscription_ids", [])
+            subs_canceled = self.cancel_subscriptions(subscription_ids)
+
+            message = ""
+            if opted_out:
+                message = "Opt-Out completed."
+            else:
+                message = "An error occured while opting the user out."
+            if subs_canceled:
+                message += " All subscriptions cancelled."
+            else:
+                message += " Failed to cancel some subscriptions"
+
+            return ((opted_out and subs_canceled), {"message": message})
 
 
 class SubscriptionPlugin(PodPlugin):
