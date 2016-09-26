@@ -49,7 +49,7 @@ describe('directives:', () ->
       el = $compile('<subscription-pod/>')($rootScope)[0]
       $rootScope.$digest()
 
-      expect(el.querySelector('.pod-title').textContent).toContain(
+      expect(el.querySelector('.pod-title').textContent).toMatch(
         'Subscription Information')
     )
 
@@ -66,10 +66,10 @@ describe('directives:', () ->
       item1 = el.querySelector('.pod-item:nth-child(1)')
 
       expect(item1.querySelector('.pod-item-name').textContent)
-        .toContain('No subscriptions')
+        .toMatch('No subscriptions')
 
       expect(item1.querySelector('.pod-item-value').textContent)
-        .toContain('')
+        .toMatch('')
     )
 
     it('should draw when there is an error', ->
@@ -85,10 +85,10 @@ describe('directives:', () ->
       item1 = el.querySelector('.pod-item:nth-child(1)')
 
       expect(item1.querySelector('.pod-item-name').textContent)
-        .toContain('Error')
+        .toMatch('Error')
 
       expect(item1.querySelector('.pod-item-value').textContent)
-        .toContain('Bad Request')
+        .toMatch('Bad Request')
     )
 
     it('should draw when there are subscriptions', ->
@@ -118,34 +118,34 @@ describe('directives:', () ->
       item5 = el.querySelector('.pod-item:nth-child(5)')
 
       expect(item1.querySelector('.pod-item-name').textContent)
-        .toContain('Message Set')
+        .toMatch('Message Set')
 
       expect(item1.querySelector('.pod-item-value').textContent)
-        .toContain('test_set')
+        .toMatch('test_set')
 
       expect(item2.querySelector('.pod-item-name').textContent)
-        .toContain('Next Sequence Number')
+        .toMatch('Next Sequence Number')
 
       expect(item2.querySelector('.pod-item-value').textContent)
-        .toContain('1')
+        .toMatch('1')
 
       expect(item3.querySelector('.pod-item-name').textContent)
-        .toContain('Schedule')
+        .toMatch('Schedule')
 
       expect(item3.querySelector('.pod-item-value').textContent)
-        .toContain('At 08:00 every Monday and Tuesday')
+        .toMatch('At 08:00 every Monday and Tuesday')
 
       expect(item4.querySelector('.pod-item-name').textContent)
-        .toContain('Active')
+        .toMatch('Active')
 
       expect(item4.querySelector('.pod-item-value').textContent)
-        .toContain('True')
+        .toMatch('True')
 
       expect(item5.querySelector('.pod-item-name').textContent)
-        .toContain('Completed')
+        .toMatch('Completed')
 
       expect(item5.querySelector('.pod-item-value').textContent)
-        .toContain('False')
+        .toMatch('False')
     )
     
 
