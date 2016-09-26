@@ -55,9 +55,9 @@ describe('directives:', () ->
 
     it('should draw when there are no subscriptions', ->
       $rootScope.podData = {
-        items: [{
+        items: [{ rows: [{
           name: 'No subscriptions', value: ''
-        }]
+        }]}]
       }
 
       el = $compile('<subscription-pod/>')($rootScope)[0]
@@ -74,9 +74,9 @@ describe('directives:', () ->
 
     it('should draw when there is an error', ->
       $rootScope.podData = {
-        items: [{
+        items: [{ rows: [{
           name: 'Error', value: 'Bad Request'
-        }]
+        }]}]
       }
 
       el = $compile('<subscription-pod/>')($rootScope)[0]
