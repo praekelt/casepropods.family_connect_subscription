@@ -131,16 +131,34 @@ class SubscriptionPodTest(BaseCasesTest):
 
         auth_header = responses.calls[0].request.headers['Authorization']
         self.assertEqual(auth_header, "Token test_token")
-        self.assertEqual(result, {"items": [
-            {"rows": [
+        # Check items returned
+        self.assertEqual(result['items'], [{"rows": [
                 {"name": "Message Set", "value": "test_set"},
                 {"name": "Next Sequence Number", "value": 1},
                 {"name": "Schedule",
                  "value": "At 08:00 every Monday and Tuesday"},
                 {"name": "Active", "value": True},
                 {"name": "Completed", "value": False},
-            ]}
-        ]})
+            ]}])
+        # Check actions returned
+        self.assertEqual(result['actions'], [{
+                'type': 'full_opt_out',
+                'name': 'Full Opt-Out',
+                'confirm': True,
+                'busy_text': 'Processing...',
+                'payload': {
+                    'contact_id': self.contact.id,
+                    'subscription_ids': ["sub_id"]
+                }
+            }, {
+                'type': 'cancel_subs',
+                'name': 'Cancel All Subscriptions',
+                'confirm': True,
+                'busy_text': 'Cancelling...',
+                'payload': {
+                    'subscription_ids': ["sub_id"]
+                }
+            }])
 
     @responses.activate
     def test_read_data_error_case(self):
