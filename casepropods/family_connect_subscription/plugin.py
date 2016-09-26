@@ -35,7 +35,11 @@ class SubscriptionPod(Pod):
 
         # Format and return data
         if response['count'] < 1:
-            return {"items": [{"name": "No subscriptions", "value": ""}]}
+            return {"items": [{
+                "rows": [{
+                    "name": "No subscriptions", "value": ""
+                }]
+            }]}
         data = response["results"]
         content = {"items": []}
         for subscription in data:

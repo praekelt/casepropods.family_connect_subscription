@@ -106,9 +106,10 @@ class SubscriptionPodTest(BaseCasesTest):
 
         auth_header = responses.calls[0].request.headers['Authorization']
         self.assertEqual(auth_header, "Token test_token")
-        self.assertEqual(result, {"items": [
-            {"name": "No subscriptions", "value": ""}
-        ]})
+        self.assertEqual(result, {"items": [{
+            "rows": [{
+                "name": "No subscriptions", "value": ""
+            }]}]})
 
     @responses.activate
     def test_read_data_one_subscription(self):
