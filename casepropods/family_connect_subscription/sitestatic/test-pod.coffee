@@ -101,9 +101,9 @@ describe('directives:', () ->
           }, {
             name: 'Schedule', value: 'At 08:00 every Monday and Tuesday'
           }, {
-            name: 'Active', value: True
+            name: 'Active', value: 'True'
           }, {
-            name: 'Completed', value: False
+            name: 'Completed', value: 'False'
           }]
         }]
       }
