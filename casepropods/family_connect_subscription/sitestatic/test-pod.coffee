@@ -48,8 +48,7 @@ describe('directives:', () ->
 
       el = $compile('<subscription-pod/>')($rootScope)[0]
       $rootScope.$digest()
-      
-      console.log(el)
+
       expect(el.querySelector('.pod-title').textContent).toContain(
         'Subscription Information')
     )
@@ -61,7 +60,7 @@ describe('directives:', () ->
         }]
       }
 
-      el = $compile('<subscriptions-pod/>')($rootScope)[0]
+      el = $compile('<subscription-pod/>')($rootScope)[0]
       $rootScope.$digest()
 
       item1 = el.querySelector('.pod-item:nth-child(1)')
@@ -80,7 +79,7 @@ describe('directives:', () ->
         }]
       }
 
-      el = $compile('<subscriptions-pod/>')($rootScope)[0]
+      el = $compile('<subscription-pod/>')($rootScope)[0]
       $rootScope.$digest()
 
       item1 = el.querySelector('.pod-item:nth-child(1)')
@@ -109,7 +108,7 @@ describe('directives:', () ->
         }]
       }
 
-      el = $compile('<subscriptions-pod/>')($rootScope)[0]
+      el = $compile('<subscription-pod/>')($rootScope)[0]
       $rootScope.$digest()
 
       item1 = el.querySelector('.pod-item:nth-child(1)')
