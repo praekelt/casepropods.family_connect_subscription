@@ -146,7 +146,7 @@ class SubscriptionPod(Pod):
             addr_type, address = contact.urns[0].split(':', 1)
             response = requests.post(
                 opt_out_url, headers=headers,
-                json={'identity': identity, 'optout_type': "stopall",
+                json={'identity': identity, 'optout_type': "forget",
                       'address_type': addr_type, 'address': address,
                       'request_source': 'casepro'},
             )
