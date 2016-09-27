@@ -142,6 +142,8 @@ class SubscriptionPod(Pod):
                 'Authorization': "Token " + identity_token,
                 'Content-Type': "application/json"
             }
+
+            # Opt-outs have to have an address. This kinda sucks though
             if contact.urns:
                 addr_type, address = contact.urns[0].split(':', 1)
                 response = requests.post(
