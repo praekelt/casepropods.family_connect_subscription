@@ -142,16 +142,16 @@ class SubscriptionPod(Pod):
                 'Authorization': "Token " + identity_token,
                 'Content-Type': "application/json"
             }
-            # TODO handle empty urns
-            addr_type, address = contact.urns[0].split(':', 1)
-            response = requests.post(
-                opt_out_url, headers=headers,
-                json={'identity': identity, 'optout_type': "forget",
-                      'address_type': addr_type, 'address': address,
-                      'request_source': 'casepro'},
-            )
-            if response.status_code == 201:
-                opted_out = True
+            if contact.urns:
+                addr_type, address = contact.urns[0].split(':', 1)
+                response = requests.post(
+                    opt_out_url, headers=headers,
+                    json={'identity': identity, 'optout_type': "forget",
+                          'address_type': addr_type, 'address': address,
+                          'request_source': 'casepro'},
+                )
+                if response.status_code == 201:
+                    opted_out = True
 
             # Cancel Subscriptions
             subscription_ids = params.get("subscription_ids", [])
