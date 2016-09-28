@@ -3,6 +3,7 @@ import responses
 from django.apps import apps
 from casepro.cases.models import Case
 from casepro.test import BaseCasesTest
+from mock import patch
 from .plugin import SubscriptionPodConfig, SubscriptionPod
 
 
@@ -209,28 +210,23 @@ class SubscriptionPodTest(BaseCasesTest):
         self.assertEqual(request.method, 'PATCH')
         self.assertEqual(request.headers['Authorization'], "Token test_token")
 
-    @responses.activate
     def test_cancel_subs_action_success(self):
-        # Add callback
-        responses.add_callback(
-            responses.PATCH, self.base_url + 'subscriptions/sub_id/',
-            callback=self.subscription_callback_one_match,
-            match_querystring=True, content_type="application/json")
+        with patch.object(
+                SubscriptionPod, 'cancel_subscriptions', return_value=True) \
+                as mock_method:
+            response = self.pod.perform_action(
+                'cancel_subs', {'subscription_ids': ['sub_id']})
+        mock_method.assert_called_with(['sub_id'])
+        self.assertEqual(
+            response, (True, {"message": "cancelled all subscriptions"}))
 
-        response = self.pod.perform_action(
-            'cancel_subs', {'subscription_ids': ['sub_id']})
-        self.assertEqual(response,
-                         (True, {"message": "cancelled all subscriptions"}))
-
-    @responses.activate
     def test_cancel_subs_action_fail(self):
-        # Add callback
-        responses.add_callback(
-            responses.PATCH, self.base_url + 'subscriptions/sub_id/',
-            callback=self.error_callback,
-            match_querystring=True, content_type="application/json")
-
-        response = self.pod.perform_action(
-            'cancel_subs', {'subscription_ids': ['sub_id']})
-        self.assertEqual(response, (False,
-                         {"message": "Failed to cancel some subscriptions"}))
+        with patch.object(
+                SubscriptionPod, 'cancel_subscriptions', return_value=False) \
+                as mock_method:
+            response = self.pod.perform_action(
+                'cancel_subs', {'subscription_ids': ['sub_id']})
+        mock_method.assert_called_with(['sub_id'])
+        self.assertEqual(
+            response,
+            (False, {"message": "Failed to cancel some subscriptions"}))
