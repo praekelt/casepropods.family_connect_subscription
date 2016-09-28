@@ -176,3 +176,35 @@ class SubscriptionPodTest(BaseCasesTest):
         self.assertEqual(result, {"items": [
             {"name": "Error", "value": "Bad Request"}
         ]})
+
+    @responses.activate
+    def test_cancel_subscriptions_success(self):
+        # Add callback
+        responses.add_callback(
+            responses.PATCH, self.base_url + 'subscriptions/sub_id/',
+            callback=self.subscription_callback_one_match,
+            match_querystring=True, content_type="application/json")
+
+        self.assertTrue(self.pod.cancel_subscriptions(['sub_id']))
+
+        request = responses.calls[0].request
+        self.assertEqual(request.url, self.base_url + 'subscriptions/sub_id/')
+        self.assertEqual(request.body, '{"active": false}')
+        self.assertEqual(request.method, 'PATCH')
+        self.assertEqual(request.headers['Authorization'], "Token test_token")
+
+    @responses.activate
+    def test_cancel_subscriptions_fail(self):
+        # Add callback
+        responses.add_callback(
+            responses.PATCH, self.base_url + 'subscriptions/sub_id/',
+            callback=self.error_callback,
+            match_querystring=True, content_type="application/json")
+
+        self.assertFalse(self.pod.cancel_subscriptions(['sub_id']))
+
+        request = responses.calls[0].request
+        self.assertEqual(request.url, self.base_url + 'subscriptions/sub_id/')
+        self.assertEqual(request.body, '{"active": false}')
+        self.assertEqual(request.method, 'PATCH')
+        self.assertEqual(request.headers['Authorization'], "Token test_token")
