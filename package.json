@@ -14,4 +14,7 @@
     "karma-jasmine": "1.0.2",
     "karma-cli": "1.0.0"
   },
+  "scripts": {
+      "test": "karma start karma.conf.js --single-run --browsers PhantomJS"
+    }
 }
