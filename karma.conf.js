@@ -5,14 +5,12 @@ module.exports = function(config) {
     basePath: 'casepropods/family_connect_subscription',
 
     files: [
-      'sitestatic/angular.min.js',
-      'sitestatic/angular-animate.min.js',
-      'sitestatic/angular-sanitize.min.js',
-      'sitestatic/angular-mocks.js',
+      'karma/vendor/angular.min.js',
+      'karma/vendor/angular-mocks.js',
       'sitestatic/subscription_pod_template.html',
-      'sitestatic/init.js',
+      'karma/init.js',
       'sitestatic/subscription_pod_directives.js',
-      'sitestatic/test-pod.coffee',
+      'karma/test-pod.coffee',
     ],
 
     frameworks: ['jasmine'],
