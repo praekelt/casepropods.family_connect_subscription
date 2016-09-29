@@ -30,4 +30,6 @@ setup(name='casepropods.family_connect_subscription',
       include_package_data=True,
       zip_safe=False,
       namespace_packages=['casepropods'],
-      entry_points={})
+      entry_points={},
+      install_requires=['seed-services-client>=0.8.0', 'pretty-cron==1.0.2'],
+      )
