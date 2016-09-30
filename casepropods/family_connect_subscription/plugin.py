@@ -20,12 +20,12 @@ class SubscriptionPodConfig(PodConfig):
 class SubscriptionPod(Pod):
     def __init__(self, pod_type, config):
         super(SubscriptionPod, self).__init__(pod_type, config)
-        url = self.config.url
-        token = self.config.token
+        self.url = self.config.url
+        self.token = self.config.token
 
         # Start a session with the StageBasedMessagingApiClient
         self.stage_based_messaging_api = StageBasedMessagingApiClient(
-            token, url)
+            self.token, self.url)
 
     def read_data(self, params):
         # Get contact idenity
@@ -121,6 +121,8 @@ class SubscriptionPod(Pod):
             'busy_text': 'Processing...',
             'payload': {
                 'new_set_id': message_set['next_set'],
+                'new_set_name': next_set["short_name"],
+                'old_set_name': message_set["short_name"],
                 'subscription_id': subscription_id
             }
         }
@@ -165,6 +167,27 @@ class SubscriptionPod(Pod):
                 return True
         return False
 
+    def switch_message_set(self, old_subscription_id, new_set_id):
+        # Create a new subscription
+        new_set = self.stage_based_messaging_api.get_messageset(new_set_id)
+        old_subscription = self.stage_based_messaging_api.get_subscription(
+            old_subscription_id)
+        data = {
+            'identity': old_subscription['identity'],
+            'lang': old_subscription['lang'],
+            'messageset': new_set_id,
+            'schedule': new_set['default_schedule']
+        }
+        headers = {
+            'Authorization': "Token " + self.token,
+            'Content-Type': "application/json"
+        }
+        response = requests.post(self.url + 'subscriptions/', headers=headers,
+                                 json=data)
+        if response.status_code == 201:
+            return True
+        return False
+
     def perform_action(self, type_, params):
         if type_ == "cancel_subs":
             subscription_ids = params.get("subscription_ids", [])
@@ -174,7 +197,7 @@ class SubscriptionPod(Pod):
                         {"message": "Failed to cancel some subscriptions"})
             return (True, {"message": "cancelled all subscriptions"})
 
-        if type_ == "full_opt_out":
+        elif type_ == "full_opt_out":
             opted_out = self.full_opt_out(params["contact_id"])
             subscription_ids = params.get("subscription_ids", [])
             subs_cancelled = self.cancel_subscriptions(subscription_ids)
@@ -187,9 +210,31 @@ class SubscriptionPod(Pod):
             if subs_cancelled:
                 message += " All subscriptions cancelled."
             else:
-                message += " Failed to cancel some subscriptions"
+                message += " Failed to cancel some subscriptions."
 
             return ((opted_out and subs_cancelled), {"message": message})
+
+        elif type_ == "switch_message_set":
+            # Cancel old subscription
+            subs_cancelled = self.cancel_subscriptions(
+                [params["subscription_id"]])
+            switched = self.switch_message_set(
+                params["subscription_id"], params["new_set_id"])
+
+            message = ""
+            if switched and subs_cancelled:
+                message = "switched from %s to %s." % (
+                    params['old_set_name'], params['new_set_name'])
+            elif switched:
+                message = "An error occured removing the old subscription. " \
+                    "The user is subscribed to both sets"
+            elif subs_cancelled:
+                message = "An error occured creating the new subscription. " \
+                    "The user has been unsubscribed."
+            else:
+                message = "Failed to switch message sets."
+
+            return ((switched and subs_cancelled), {"message": message})
 
 
 class SubscriptionPlugin(PodPlugin):
