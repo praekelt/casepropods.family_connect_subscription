@@ -122,6 +122,30 @@ class SubscriptionPod(Pod):
                 return False
         return True
 
+    def full_opt_out(self, contact_id):
+        contact = Contact.objects.get(pk=contact_id)
+        identity = contact.uuid
+
+        opt_out_url = settings.IDENTITY_API_ROOT + "api/v1/optout/"
+        identity_token = settings.IDENTITY_AUTH_TOKEN
+        headers = {
+            'Authorization': "Token " + identity_token,
+            'Content-Type': "application/json"
+        }
+
+        # Opt-outs have to have an address. This kinda sucks though
+        if contact.urns:
+            addr_type, address = contact.urns[0].split(':', 1)
+            response = requests.post(
+                opt_out_url, headers=headers,
+                json={'identity': identity, 'optout_type': "forget",
+                      'address_type': addr_type, 'address': address,
+                      'request_source': 'casepro'},
+            )
+            if response.status_code == 201:
+                return True
+        return False
+
     def perform_action(self, type_, params):
         if type_ == "cancel_subs":
             subscription_ids = params.get("subscription_ids", [])
@@ -132,34 +156,7 @@ class SubscriptionPod(Pod):
             return (True, {"message": "cancelled all subscriptions"})
 
         if type_ == "full_opt_out":
-            opted_out = False
-            subs_cancelled = False
-
-            # Create OptOut
-            contact_id = params["contact_id"]
-            contact = Contact.objects.get(pk=contact_id)
-            identity = contact.uuid
-
-            opt_out_url = settings.IDENTITY_API_ROOT + "api/v1/optout/"
-            identity_token = settings.IDENTITY_AUTH_TOKEN
-            headers = {
-                'Authorization': "Token " + identity_token,
-                'Content-Type': "application/json"
-            }
-
-            # Opt-outs have to have an address. This kinda sucks though
-            if contact.urns:
-                addr_type, address = contact.urns[0].split(':', 1)
-                response = requests.post(
-                    opt_out_url, headers=headers,
-                    json={'identity': identity, 'optout_type': "forget",
-                          'address_type': addr_type, 'address': address,
-                          'request_source': 'casepro'},
-                )
-                if response.status_code == 201:
-                    opted_out = True
-
-            # Cancel Subscriptions
+            opted_out = self.full_opt_out(params["contact_id"])
             subscription_ids = params.get("subscription_ids", [])
             subs_cancelled = self.cancel_subscriptions(subscription_ids)
 
