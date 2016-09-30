@@ -314,7 +314,7 @@ class SubscriptionPodTest(BaseCasesTest):
         self.assertEqual(
             response, (False, {
                 "message":
-                "Opt-Out completed. Failed to cancel some subscriptions"}))
+                "Opt-Out completed. Failed to cancel some subscriptions."}))
 
     @responses.activate
     def test_opt_out_action_all_fails(self):
@@ -336,4 +336,4 @@ class SubscriptionPodTest(BaseCasesTest):
             response, (False, {
                 "message":
                 "An error occured while opting the user out. "
-                "Failed to cancel some subscriptions"}))
+                "Failed to cancel some subscriptions."}))
