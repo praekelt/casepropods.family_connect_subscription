@@ -50,6 +50,7 @@ class SubscriptionPod(Pod):
         data = response["results"]
         content = {"items": []}
         active_sub_ids = []
+        actions = []
         for subscription in data:
             subscription_data = {"rows": []}
             # Add the messageset
@@ -59,6 +60,9 @@ class SubscriptionPod(Pod):
             if message_set:
                 subscription_data['rows'].append({
                     "name": "Message Set", "value": message_set["short_name"]})
+                if subscription['active'] and message_set['next_set']:
+                    actions.append(self.get_messageset_action(
+                        message_set, subscription['id']))
             # Add the sequence number
             subscription_data['rows'].append({
                 "name": "Next Sequence Number",
@@ -81,7 +85,7 @@ class SubscriptionPod(Pod):
                 "value": subscription['completed']})
             content['items'].append(subscription_data)
 
-        actions = [{
+        actions.append({
             'type': 'full_opt_out',
             'name': 'Full Opt-Out',
             'confirm': True,
@@ -90,7 +94,7 @@ class SubscriptionPod(Pod):
                 'contact_id': case.contact.id,
                 'subscription_ids': active_sub_ids
             }
-        }]
+        })
         if len(active_sub_ids) > 0:
             cancel_action = {
                 'type': 'cancel_subs',
@@ -105,6 +109,21 @@ class SubscriptionPod(Pod):
 
         content['actions'] = actions
         return content
+
+    def get_messageset_action(self, message_set, subscription_id):
+        next_set = self.stage_based_messaging_api.get_messageset(
+            message_set['next_set'])
+        return {
+            'type': 'switch_message_set',
+            'name': 'Switch from %s to %s' % (message_set["short_name"],
+                                              next_set["short_name"]),
+            'confirm': True,
+            'busy_text': 'Processing...',
+            'payload': {
+                'new_set_id': message_set['next_set'],
+                'subscription_id': subscription_id
+            }
+        }
 
     def format_schedule(self, schedule):
         cron_schedule = "%s %s %s %s %s" % (
