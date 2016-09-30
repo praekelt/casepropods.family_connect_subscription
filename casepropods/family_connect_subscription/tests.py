@@ -69,7 +69,7 @@ class SubscriptionPodTest(BaseCasesTest):
             "short_name": "test_set",
             "content_type": "text",
             "notes": "",
-            "next_set": None,
+            "next_set": 1,
             "default_schedule": 1,
             "created_at": "2016-07-22T15:52:16.308779Z",
             "updated_at": "2016-07-22T15:52:16.308802Z"
@@ -145,6 +145,17 @@ class SubscriptionPodTest(BaseCasesTest):
             ]}])
         # Check actions returned
         self.assertEqual(result['actions'], [{
+                'type': 'switch_message_set',
+                'name': 'Switch from test_set to test_set',
+                'confirm': True,
+                'busy_text': 'Processing...',
+                'payload': {
+                    'new_set_id': 1,
+                    'new_set_name': 'test_set',
+                    'old_set_name': 'test_set',
+                    'subscription_id': 'sub_id'
+                }
+            },{
                 'type': 'full_opt_out',
                 'name': 'Full Opt-Out',
                 'confirm': True,
