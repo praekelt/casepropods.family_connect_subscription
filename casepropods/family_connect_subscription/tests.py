@@ -27,6 +27,23 @@ class SubscriptionPodTest(BaseCasesTest):
                 'token': "test_token",
             }))
 
+        self.subscription_data = {
+            "url": "http://example.com/api/v1/subscriptions/sub_id/",
+            "id": "sub_id",
+            "version": 1,
+            "identity": "C-002",
+            "messageset": 1,
+            "next_sequence_number": 1,
+            "lang": "eng",
+            "active": True,
+            "completed": False,
+            "schedule": 1,
+            "process_status": 0,
+            "metadata": None,
+            "created_at": "2016-07-22T15:53:42.282902Z",
+            "updated_at": "2016-09-06T17:17:54.746390Z"
+        }
+
     def subscription_callback_no_matches(self, request):
         headers = {'Content-Type': "application/json"}
         resp = {
@@ -37,29 +54,19 @@ class SubscriptionPodTest(BaseCasesTest):
         }
         return (200, headers, json.dumps(resp))
 
-    def subscription_callback_one_match(self, request):
+    def subscription_filter_callback_one_match(self, request):
         headers = {'Content-Type': "application/json"}
         resp = {
             "count": 1,
             "next": None,
             "previous": None,
-            "results": [{
-                "url": "http://example.com/api/v1/subscriptions/sub_id/",
-                "id": "sub_id",
-                "version": 1,
-                "identity": "C-002",
-                "messageset": 1,
-                "next_sequence_number": 1,
-                "lang": "eng",
-                "active": True,
-                "completed": False,
-                "schedule": 1,
-                "process_status": 0,
-                "metadata": None,
-                "created_at": "2016-07-22T15:53:42.282902Z",
-                "updated_at": "2016-09-06T17:17:54.746390Z"
-            }]
+            "results": [self.subscription_data]
         }
+        return (200, headers, json.dumps(resp))
+
+    def subscription_callback(self, request):
+        headers = {'Content-Type': "application/json"}
+        resp = self.subscription_data
         return (200, headers, json.dumps(resp))
 
     def message_set_callback(self, request):
@@ -119,7 +126,7 @@ class SubscriptionPodTest(BaseCasesTest):
         responses.add_callback(
             responses.GET,
             self.base_url + 'subscriptions/?identity=' + self.contact.uuid,
-            callback=self.subscription_callback_one_match,
+            callback=self.subscription_filter_callback_one_match,
             match_querystring=True, content_type="application/json")
         responses.add_callback(
             responses.GET, self.base_url + 'messageset/1/',
@@ -196,7 +203,7 @@ class SubscriptionPodTest(BaseCasesTest):
         # Add callback
         responses.add_callback(
             responses.PATCH, self.base_url + 'subscriptions/sub_id/',
-            callback=self.subscription_callback_one_match,
+            callback=self.subscription_callback,
             match_querystring=True, content_type="application/json")
 
         self.assertTrue(self.pod.cancel_subscriptions(['sub_id']))
