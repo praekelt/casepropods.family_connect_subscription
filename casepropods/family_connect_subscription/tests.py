@@ -1,8 +1,10 @@
 import json
 import responses
 from django.apps import apps
+from django.conf import settings
 from casepro.cases.models import Case
 from casepro.test import BaseCasesTest
+from mock import patch
 from .plugin import SubscriptionPodConfig, SubscriptionPod
 
 
@@ -132,16 +134,34 @@ class SubscriptionPodTest(BaseCasesTest):
 
         auth_header = responses.calls[0].request.headers['Authorization']
         self.assertEqual(auth_header, "Token test_token")
-        self.assertEqual(result, {"items": [
-            {"rows": [
+        # Check items returned
+        self.assertEqual(result['items'], [{"rows": [
                 {"name": "Message Set", "value": "test_set"},
                 {"name": "Next Sequence Number", "value": 1},
                 {"name": "Schedule",
                  "value": "At 08:00 every Monday and Tuesday"},
                 {"name": "Active", "value": True},
                 {"name": "Completed", "value": False},
-            ]}
-        ]})
+            ]}])
+        # Check actions returned
+        self.assertEqual(result['actions'], [{
+                'type': 'full_opt_out',
+                'name': 'Full Opt-Out',
+                'confirm': True,
+                'busy_text': 'Processing...',
+                'payload': {
+                    'contact_id': self.contact.id,
+                    'subscription_ids': ["sub_id"]
+                }
+            }, {
+                'type': 'cancel_subs',
+                'name': 'Cancel All Subscriptions',
+                'confirm': True,
+                'busy_text': 'Cancelling...',
+                'payload': {
+                    'subscription_ids': ["sub_id"]
+                }
+            }])
 
     @responses.activate
     def test_read_data_error_case(self):
@@ -159,3 +179,161 @@ class SubscriptionPodTest(BaseCasesTest):
         self.assertEqual(result, {"items": [
             {"name": "Error", "value": "Bad Request"}
         ]})
+
+    @responses.activate
+    def test_cancel_subscriptions_method_success(self):
+        # Add callback
+        responses.add_callback(
+            responses.PATCH, self.base_url + 'subscriptions/sub_id/',
+            callback=self.subscription_callback_one_match,
+            match_querystring=True, content_type="application/json")
+
+        self.assertTrue(self.pod.cancel_subscriptions(['sub_id']))
+
+        request = responses.calls[0].request
+        self.assertEqual(request.url, self.base_url + 'subscriptions/sub_id/')
+        self.assertEqual(request.body, '{"active": false}')
+        self.assertEqual(request.method, 'PATCH')
+        self.assertEqual(request.headers['Authorization'], "Token test_token")
+
+    @responses.activate
+    def test_cancel_subscriptions_method_fail(self):
+        # Add callback
+        responses.add_callback(
+            responses.PATCH, self.base_url + 'subscriptions/sub_id/',
+            callback=self.error_callback,
+            match_querystring=True, content_type="application/json")
+
+        self.assertFalse(self.pod.cancel_subscriptions(['sub_id']))
+
+        request = responses.calls[0].request
+        self.assertEqual(request.url, self.base_url + 'subscriptions/sub_id/')
+        self.assertEqual(request.body, '{"active": false}')
+        self.assertEqual(request.method, 'PATCH')
+        self.assertEqual(request.headers['Authorization'], "Token test_token")
+
+    def test_cancel_subs_action_success(self):
+        with patch.object(
+                SubscriptionPod, 'cancel_subscriptions', return_value=True) \
+                as mock_method:
+            response = self.pod.perform_action(
+                'cancel_subs', {'subscription_ids': ['sub_id']})
+        mock_method.assert_called_with(['sub_id'])
+        self.assertEqual(
+            response, (True, {"message": "cancelled all subscriptions"}))
+
+    def test_cancel_subs_action_fail(self):
+        with patch.object(
+                SubscriptionPod, 'cancel_subscriptions', return_value=False) \
+                as mock_method:
+            response = self.pod.perform_action(
+                'cancel_subs', {'subscription_ids': ['sub_id']})
+        mock_method.assert_called_with(['sub_id'])
+        self.assertEqual(
+            response,
+            (False, {"message": "Failed to cancel some subscriptions"}))
+
+    @responses.activate
+    def test_opt_out_action_success(self):
+        self.contact.urns = ['msisdn:+27345']
+        self.contact.save()
+        # Add callback
+        responses.add(
+            responses.POST, settings.IDENTITY_API_ROOT + "api/v1/optout/",
+            content_type="application/json",
+            status=201)
+        with patch.object(
+                SubscriptionPod, 'cancel_subscriptions', return_value=True) \
+                as mock_method:
+            response = self.pod.perform_action(
+                'full_opt_out', {'contact_id': self.contact.id,
+                                 'subscription_ids': ['sub_id']})
+        mock_method.assert_called_with(['sub_id'])
+        self.assertEqual(
+            response, (True, {
+                "message": "Opt-Out completed. All subscriptions cancelled."}))
+
+    @responses.activate
+    def test_opt_out_action_no_urn(self):
+        self.contact.urns = []
+        self.contact.save()
+        # Add callback
+        responses.add(
+            responses.POST, settings.IDENTITY_API_ROOT + "api/v1/optout/",
+            content_type="application/json",
+            status=201)
+        with patch.object(
+                SubscriptionPod, 'cancel_subscriptions', return_value=True) \
+                as mock_method:
+            response = self.pod.perform_action(
+                'full_opt_out', {'contact_id': self.contact.id,
+                                 'subscription_ids': ['sub_id']})
+        mock_method.assert_called_with(['sub_id'])
+        self.assertEqual(
+            response, (False, {
+                "message": "An error occured while opting the user out. "
+                "All subscriptions cancelled."}))
+
+    @responses.activate
+    def test_opt_out_action_opt_out_fails(self):
+        self.contact.urns = ['msisdn:+27345']
+        self.contact.save()
+        # Add callback
+        responses.add(
+            responses.POST, settings.IDENTITY_API_ROOT + "api/v1/optout/",
+            content_type="application/json",
+            status=400)
+        with patch.object(
+                SubscriptionPod, 'cancel_subscriptions', return_value=True) \
+                as mock_method:
+            response = self.pod.perform_action(
+                'full_opt_out', {'contact_id': self.contact.id,
+                                 'subscription_ids': ['sub_id']})
+        mock_method.assert_called_with(['sub_id'])
+        self.assertEqual(
+            response, (False, {
+                "message": "An error occured while opting the user out. "
+                "All subscriptions cancelled."}))
+
+    @responses.activate
+    def test_opt_out_action_cancel_sub_fails(self):
+        self.contact.urns = ['msisdn:+27345']
+        self.contact.save()
+        # Add callback
+        responses.add(
+            responses.POST, settings.IDENTITY_API_ROOT + "api/v1/optout/",
+            content_type="application/json",
+            status=201)
+        with patch.object(
+                SubscriptionPod, 'cancel_subscriptions', return_value=False) \
+                as mock_method:
+            response = self.pod.perform_action(
+                'full_opt_out', {'contact_id': self.contact.id,
+                                 'subscription_ids': ['sub_id']})
+        mock_method.assert_called_with(['sub_id'])
+        self.assertEqual(
+            response, (False, {
+                "message":
+                "Opt-Out completed. Failed to cancel some subscriptions"}))
+
+    @responses.activate
+    def test_opt_out_action_all_fails(self):
+        self.contact.urns = ['msisdn:+27345']
+        self.contact.save()
+        # Add callback
+        responses.add(
+            responses.POST, settings.IDENTITY_API_ROOT + "api/v1/optout/",
+            content_type="application/json",
+            status=400)
+        with patch.object(
+                SubscriptionPod, 'cancel_subscriptions', return_value=False) \
+                as mock_method:
+            response = self.pod.perform_action(
+                'full_opt_out', {'contact_id': self.contact.id,
+                                 'subscription_ids': ['sub_id']})
+        mock_method.assert_called_with(['sub_id'])
+        self.assertEqual(
+            response, (False, {
+                "message":
+                "An error occured while opting the user out. "
+                "Failed to cancel some subscriptions"}))
