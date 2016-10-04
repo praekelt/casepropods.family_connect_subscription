@@ -167,7 +167,7 @@ class SubscriptionPod(Pod):
                 return True
         return False
 
-    def switch_message_set(self, old_subscription_id, new_set_id):
+    def activate_message_set(self, old_subscription_id, new_set_id):
         # Create a new subscription
         new_set = self.stage_based_messaging_api.get_messageset(new_set_id)
         old_subscription = self.stage_based_messaging_api.get_subscription(
@@ -218,7 +218,8 @@ class SubscriptionPod(Pod):
             # Cancel old subscription
             subs_cancelled = self.cancel_subscriptions(
                 [params["subscription_id"]])
-            switched = self.switch_message_set(
+            # Start new subscription
+            switched = self.activate_message_set(
                 params["subscription_id"], params["new_set_id"])
 
             message = ""
