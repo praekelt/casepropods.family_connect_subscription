@@ -355,3 +355,102 @@ class SubscriptionPodTest(BaseCasesTest):
                 "message":
                 "An error occured while opting the user out. "
                 "Failed to cancel some subscriptions."}))
+
+    @responses.activate
+    def test_activate_message_set(self):
+        # Add callback
+        responses.add_callback(
+            responses.GET, self.base_url + 'messageset/1/',
+            callback=self.message_set_callback,
+            match_querystring=True, content_type="application/json")
+        responses.add_callback(
+            responses.GET, self.base_url + 'subscriptions/sub_id/',
+            callback=self.subscription_callback,
+            match_querystring=True, content_type="application/json")
+        responses.add(
+            responses.POST, self.base_url + 'subscriptions/',
+            content_type="application/json",
+            status=201)
+
+        self.assertTrue(self.pod.activate_message_set('sub_id', 1))
+
+        request = responses.calls[2].request
+        self.assertEqual(request.url, self.base_url + 'subscriptions/')
+        self.assertEqual(request.method, 'POST')
+        self.assertEqual(request.headers['Authorization'], "Token test_token")
+        self.assertEqual(json.loads(request.body), {
+            'identity': "C-002",
+            'lang': "eng",
+            'messageset': 1,
+            'schedule': 1
+        })
+
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "cancel_subscriptions", return_value=True)
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "activate_message_set", return_value=True)
+    def test_switch_action_success(self, mock_activate, mock_cancel):
+        response = self.pod.perform_action(
+            'switch_message_set',
+            {'new_set_id': 1,
+                'new_set_name': "test_set2",
+                'old_set_name': "test_set1",
+                'subscription_id': "sub_id"})
+        mock_cancel.assert_called_with(['sub_id'])
+        mock_activate.assert_called_with('sub_id', 1)
+        self.assertEqual(
+            response, (True, {
+                "message": "switched from test_set1 to test_set2."}))
+
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "cancel_subscriptions", return_value=False)
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "activate_message_set", return_value=False)
+    def test_switch_action_fail(self, mock_activate, mock_cancel):
+        response = self.pod.perform_action(
+            'switch_message_set',
+            {'new_set_id': 1,
+                'new_set_name': "test_set2",
+                'old_set_name': "test_set1",
+                'subscription_id': "sub_id"})
+        mock_cancel.assert_called_with(['sub_id'])
+        mock_activate.assert_called_with('sub_id', 1)
+        self.assertEqual(
+            response, (False, {
+                "message": "Failed to switch message sets."}))
+
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "cancel_subscriptions", return_value=False)
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "activate_message_set", return_value=True)
+    def test_switch_action_cancel_sub_fail(self, mock_activate, mock_cancel):
+        response = self.pod.perform_action(
+            'switch_message_set',
+            {'new_set_id': 1,
+                'new_set_name': "test_set2",
+                'old_set_name': "test_set1",
+                'subscription_id': "sub_id"})
+        mock_cancel.assert_called_with(['sub_id'])
+        mock_activate.assert_called_with('sub_id', 1)
+        self.assertEqual(
+            response, (False, {
+                "message": "An error occured removing the old subscription. "
+                           "The user is subscribed to both sets"}))
+
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "cancel_subscriptions", return_value=True)
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "activate_message_set", return_value=False)
+    def test_switch_action_activate_new_fail(self, mock_activate, mock_cancel):
+        response = self.pod.perform_action(
+            'switch_message_set',
+            {'new_set_id': 1,
+                'new_set_name': "test_set2",
+                'old_set_name': "test_set1",
+                'subscription_id': "sub_id"})
+        mock_cancel.assert_called_with(['sub_id'])
+        mock_activate.assert_called_with('sub_id', 1)
+        self.assertEqual(
+            response, (False, {
+                "message": "An error occured creating the new subscription. "
+                           "The user has been unsubscribed."}))
