@@ -27,6 +27,23 @@ class SubscriptionPodTest(BaseCasesTest):
                 'token': "test_token",
             }))
 
+        self.subscription_data = {
+            "url": "http://example.com/api/v1/subscriptions/sub_id/",
+            "id": "sub_id",
+            "version": 1,
+            "identity": "C-002",
+            "messageset": 1,
+            "next_sequence_number": 1,
+            "lang": "eng",
+            "active": True,
+            "completed": False,
+            "schedule": 1,
+            "process_status": 0,
+            "metadata": None,
+            "created_at": "2016-07-22T15:53:42.282902Z",
+            "updated_at": "2016-09-06T17:17:54.746390Z"
+        }
+
     def subscription_callback_no_matches(self, request):
         headers = {'Content-Type': "application/json"}
         resp = {
@@ -37,29 +54,19 @@ class SubscriptionPodTest(BaseCasesTest):
         }
         return (200, headers, json.dumps(resp))
 
-    def subscription_callback_one_match(self, request):
+    def subscription_filter_callback_one_match(self, request):
         headers = {'Content-Type': "application/json"}
         resp = {
             "count": 1,
             "next": None,
             "previous": None,
-            "results": [{
-                "url": "http://example.com/api/v1/subscriptions/sub_id/",
-                "id": "sub_id",
-                "version": 1,
-                "identity": "C-002",
-                "messageset": 1,
-                "next_sequence_number": 1,
-                "lang": "eng",
-                "active": True,
-                "completed": False,
-                "schedule": 1,
-                "process_status": 0,
-                "metadata": None,
-                "created_at": "2016-07-22T15:53:42.282902Z",
-                "updated_at": "2016-09-06T17:17:54.746390Z"
-            }]
+            "results": [self.subscription_data]
         }
+        return (200, headers, json.dumps(resp))
+
+    def subscription_callback(self, request):
+        headers = {'Content-Type': "application/json"}
+        resp = self.subscription_data
         return (200, headers, json.dumps(resp))
 
     def message_set_callback(self, request):
@@ -69,7 +76,7 @@ class SubscriptionPodTest(BaseCasesTest):
             "short_name": "test_set",
             "content_type": "text",
             "notes": "",
-            "next_set": None,
+            "next_set": 1,
             "default_schedule": 1,
             "created_at": "2016-07-22T15:52:16.308779Z",
             "updated_at": "2016-07-22T15:52:16.308802Z"
@@ -119,7 +126,7 @@ class SubscriptionPodTest(BaseCasesTest):
         responses.add_callback(
             responses.GET,
             self.base_url + 'subscriptions/?identity=' + self.contact.uuid,
-            callback=self.subscription_callback_one_match,
+            callback=self.subscription_filter_callback_one_match,
             match_querystring=True, content_type="application/json")
         responses.add_callback(
             responses.GET, self.base_url + 'messageset/1/',
@@ -145,6 +152,17 @@ class SubscriptionPodTest(BaseCasesTest):
             ]}])
         # Check actions returned
         self.assertEqual(result['actions'], [{
+                'type': 'switch_message_set',
+                'name': 'Switch from test_set to test_set',
+                'confirm': True,
+                'busy_text': 'Processing...',
+                'payload': {
+                    'new_set_id': 1,
+                    'new_set_name': 'test_set',
+                    'old_set_name': 'test_set',
+                    'subscription_id': 'sub_id'
+                }
+            },{
                 'type': 'full_opt_out',
                 'name': 'Full Opt-Out',
                 'confirm': True,
@@ -185,7 +203,7 @@ class SubscriptionPodTest(BaseCasesTest):
         # Add callback
         responses.add_callback(
             responses.PATCH, self.base_url + 'subscriptions/sub_id/',
-            callback=self.subscription_callback_one_match,
+            callback=self.subscription_callback,
             match_querystring=True, content_type="application/json")
 
         self.assertTrue(self.pod.cancel_subscriptions(['sub_id']))
@@ -314,7 +332,7 @@ class SubscriptionPodTest(BaseCasesTest):
         self.assertEqual(
             response, (False, {
                 "message":
-                "Opt-Out completed. Failed to cancel some subscriptions"}))
+                "Opt-Out completed. Failed to cancel some subscriptions."}))
 
     @responses.activate
     def test_opt_out_action_all_fails(self):
@@ -336,4 +354,103 @@ class SubscriptionPodTest(BaseCasesTest):
             response, (False, {
                 "message":
                 "An error occured while opting the user out. "
-                "Failed to cancel some subscriptions"}))
+                "Failed to cancel some subscriptions."}))
+
+    @responses.activate
+    def test_activate_message_set(self):
+        # Add callback
+        responses.add_callback(
+            responses.GET, self.base_url + 'messageset/1/',
+            callback=self.message_set_callback,
+            match_querystring=True, content_type="application/json")
+        responses.add_callback(
+            responses.GET, self.base_url + 'subscriptions/sub_id/',
+            callback=self.subscription_callback,
+            match_querystring=True, content_type="application/json")
+        responses.add(
+            responses.POST, self.base_url + 'subscriptions/',
+            content_type="application/json",
+            status=201)
+
+        self.assertTrue(self.pod.activate_message_set('sub_id', 1))
+
+        request = responses.calls[2].request
+        self.assertEqual(request.url, self.base_url + 'subscriptions/')
+        self.assertEqual(request.method, 'POST')
+        self.assertEqual(request.headers['Authorization'], "Token test_token")
+        self.assertEqual(json.loads(request.body), {
+            'identity': "C-002",
+            'lang': "eng",
+            'messageset': 1,
+            'schedule': 1
+        })
+
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "cancel_subscriptions", return_value=True)
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "activate_message_set", return_value=True)
+    def test_switch_action_success(self, mock_activate, mock_cancel):
+        response = self.pod.perform_action(
+            'switch_message_set',
+            {'new_set_id': 1,
+                'new_set_name': "test_set2",
+                'old_set_name': "test_set1",
+                'subscription_id': "sub_id"})
+        mock_cancel.assert_called_with(['sub_id'])
+        mock_activate.assert_called_with('sub_id', 1)
+        self.assertEqual(
+            response, (True, {
+                "message": "switched from test_set1 to test_set2."}))
+
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "cancel_subscriptions", return_value=False)
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "activate_message_set", return_value=False)
+    def test_switch_action_fail(self, mock_activate, mock_cancel):
+        response = self.pod.perform_action(
+            'switch_message_set',
+            {'new_set_id': 1,
+                'new_set_name': "test_set2",
+                'old_set_name': "test_set1",
+                'subscription_id': "sub_id"})
+        mock_cancel.assert_called_with(['sub_id'])
+        mock_activate.assert_called_with('sub_id', 1)
+        self.assertEqual(
+            response, (False, {
+                "message": "Failed to switch message sets."}))
+
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "cancel_subscriptions", return_value=False)
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "activate_message_set", return_value=True)
+    def test_switch_action_cancel_sub_fail(self, mock_activate, mock_cancel):
+        response = self.pod.perform_action(
+            'switch_message_set',
+            {'new_set_id': 1,
+                'new_set_name': "test_set2",
+                'old_set_name': "test_set1",
+                'subscription_id': "sub_id"})
+        mock_cancel.assert_called_with(['sub_id'])
+        mock_activate.assert_called_with('sub_id', 1)
+        self.assertEqual(
+            response, (False, {
+                "message": "An error occured removing the old subscription. "
+                           "The user is subscribed to both sets"}))
+
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "cancel_subscriptions", return_value=True)
+    @patch("casepropods.family_connect_subscription.plugin.SubscriptionPod."
+           "activate_message_set", return_value=False)
+    def test_switch_action_activate_new_fail(self, mock_activate, mock_cancel):
+        response = self.pod.perform_action(
+            'switch_message_set',
+            {'new_set_id': 1,
+                'new_set_name': "test_set2",
+                'old_set_name': "test_set1",
+                'subscription_id': "sub_id"})
+        mock_cancel.assert_called_with(['sub_id'])
+        mock_activate.assert_called_with('sub_id', 1)
+        self.assertEqual(
+            response, (False, {
+                "message": "An error occured creating the new subscription. "
+                           "The user has been unsubscribed."}))
