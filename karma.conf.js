@@ -7,9 +7,9 @@ module.exports = function(config) {
     files: [
       'karma/vendor/angular.min.js',
       'karma/vendor/angular-mocks.js',
-      'sitestatic/subscription_pod_template.html',
+      'static/subscription_pod_template.html',
       'karma/init.js',
-      'sitestatic/subscription_pod_directives.js',
+      'static/subscription_pod_directives.js',
       'karma/test-pod.coffee',
     ],
 
@@ -17,10 +17,12 @@ module.exports = function(config) {
 
     preprocessors: {
           '**/*.coffee': ['coffee'],
-          'sitestatic/*.html': ['ng-html2js']
+          'static/*.html': ['ng-html2js']
         },
         
     ngHtml2JsPreprocessor: {
+      stripPrefix: 'static/',
+      prependPrefix: '/sitestatic/',
       moduleName: 'templates'
     },
 
