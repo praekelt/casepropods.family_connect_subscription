@@ -1,7 +1,5 @@
 import requests
 from pretty_cron import prettify_cron
-from casepro.cases.models import Case
-from casepro.contacts.models import Contact
 from casepro.pods import Pod, PodConfig, PodPlugin
 from confmodel import fields
 from demands import HTTPServiceError
@@ -28,6 +26,8 @@ class SubscriptionPod(Pod):
             self.token, self.url)
 
     def read_data(self, params):
+        from casepro.cases.models import Case
+
         # Get contact idenity
         case_id = params["case_id"]
         case = Case.objects.get(pk=case_id)
@@ -144,6 +144,8 @@ class SubscriptionPod(Pod):
         return True
 
     def full_opt_out(self, contact_id):
+        from casepro.contacts.models import Contact
+
         contact = Contact.objects.get(pk=contact_id)
         identity = contact.uuid
 
