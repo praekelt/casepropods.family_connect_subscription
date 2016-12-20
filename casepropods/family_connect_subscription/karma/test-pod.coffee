@@ -147,6 +147,31 @@ describe('directives:', () ->
       expect(item5.querySelector('.pod-item-value').textContent)
         .toMatch('False')
     )
+
+    it('should draw the pod actions even if the types aren\'t unique', ->
+      $rootScope.podData.actions = [{
+        type: 'switch',
+        name: 'test_set_1',
+        busyText: 'Foo',
+        isBusy: false,
+        payload: {bar: 'baz'}
+      }, {
+        type: 'switch',
+        name: 'test_set_2',
+        busyText: 'Quux',
+        isBusy: false,
+        payload: {corge: 'grault'}
+      }]
+
+      el = $compile('<subscription-pod/>')($rootScope)[0]
+      $rootScope.$digest()
+
+      action1 = el.querySelectorAll('.pod-action')[0]
+      action2 = el.querySelectorAll('.pod-action')[1]
+
+      expect(action1.textContent).toContain('test_set_1')
+      expect(action2.textContent).toContain('test_set_2')
+    )
     
 
     it('should draw whether it is loading', () ->
