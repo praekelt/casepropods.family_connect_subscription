@@ -52,7 +52,7 @@ class SubscriptionPod(Pod):
         active_sub_ids = []
         actions = []
         for subscription in data:
-            subscription_data = {"rows": []}
+            subscription_data = {"rows": [], "actions": []}
             # Add the messageset
             message_set_id = subscription['messageset']
             message_set = self.stage_based_messaging_api.get_messageset(
@@ -79,6 +79,8 @@ class SubscriptionPod(Pod):
                 "value": subscription['active']})
             if subscription['active']:
                 active_sub_ids.append(subscription['id'])
+                subscription_data['actions'].append(
+                    self.get_cancel_action([subscription['id']]))
             # Add the completed flag
             subscription_data['rows'].append({
                 "name": "Completed",
