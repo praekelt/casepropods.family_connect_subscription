@@ -95,7 +95,7 @@ class SubscriptionPod(Pod):
                 'subscription_ids': active_sub_ids
             }
         })
-        if len(active_sub_ids) > 0:
+        if len(active_sub_ids) > 1:
             actions.append(self.get_cancel_action(active_sub_ids))
 
         content['actions'] = actions
