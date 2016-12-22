@@ -61,8 +61,9 @@ class SubscriptionPod(Pod):
                 subscription_data['rows'].append({
                     "name": "Message Set", "value": message_set["short_name"]})
                 if subscription['active'] and message_set['next_set']:
-                    actions.append(self.get_messageset_action(
-                        message_set, subscription['id']))
+                    subscription_data['actions'].append(
+                        self.get_messageset_action(
+                            message_set, subscription['id']))
             # Add the sequence number
             subscription_data['rows'].append({
                 "name": "Next Sequence Number",
