@@ -96,16 +96,7 @@ class SubscriptionPod(Pod):
             }
         })
         if len(active_sub_ids) > 0:
-            cancel_action = {
-                'type': 'cancel_subs',
-                'name': 'Cancel All Subscriptions',
-                'confirm': True,
-                'busy_text': 'Cancelling...',
-                'payload': {
-                    'subscription_ids': active_sub_ids
-                }
-            }
-            actions.append(cancel_action)
+            actions.append(self.get_cancel_action(active_sub_ids))
 
         content['actions'] = actions
         return content
@@ -124,6 +115,17 @@ class SubscriptionPod(Pod):
                 'new_set_name': next_set["short_name"],
                 'old_set_name': message_set["short_name"],
                 'subscription_id': subscription_id
+            }
+        }
+
+    def get_cancel_action(self, subscription_ids):
+        return {
+            'type': 'cancel_subs',
+            'name': 'Cancel All Subscriptions',
+            'confirm': True,
+            'busy_text': 'Cancelling...',
+            'payload': {
+                'subscription_ids': subscription_ids
             }
         }
 
