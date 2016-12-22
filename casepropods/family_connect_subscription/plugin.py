@@ -119,9 +119,13 @@ class SubscriptionPod(Pod):
         }
 
     def get_cancel_action(self, subscription_ids):
+        if len(subscription_ids) == 1:
+            text = "Cancel Subscription"
+        else:
+            text = "Cancel Subscriptions"
         return {
             'type': 'cancel_subs',
-            'name': 'Cancel All Subscriptions',
+            'name': text,
             'confirm': True,
             'busy_text': 'Cancelling...',
             'payload': {
