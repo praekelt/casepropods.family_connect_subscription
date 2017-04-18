@@ -26,6 +26,23 @@
                             <div class="pod-item-value">[[ item.value ]]</div>
                         </div>
                     </div>
+                    <div class="btn-group" ng-if="status === 'idle'">
+                        <a
+                          href=""
+                          class="pod-action btn btn-default"
+                          type="button"
+                          ng-repeat="action in subscription.actions"
+                          ng-class="{disabled: action.isBusy}"
+                          ng-click="trigger(action)"
+                          tooltip-placement="top" 
+                          uib-tooltip="[[ action.name ]]"
+                          tooltip-enable="action.type == 'switch_message_set'"
+                          tooltip-append-to-body="true">
+                          <span ng-if="!action.isBusy && action.type != 'switch_message_set'" class="text-primary">[[ action.name ]]</span>
+                          <span ng-if="!action.isBusy && action.type == 'switch_message_set'" class="text-primary">Switch</span>
+                          <span ng-if="action.isBusy">[[ action.busyText ]]</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

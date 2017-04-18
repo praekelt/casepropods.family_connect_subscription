@@ -52,7 +52,7 @@ class SubscriptionPod(Pod):
         active_sub_ids = []
         actions = []
         for subscription in data:
-            subscription_data = {"rows": []}
+            subscription_data = {"rows": [], "actions": []}
             # Add the messageset
             message_set_id = subscription['messageset']
             message_set = self.stage_based_messaging_api.get_messageset(
@@ -61,8 +61,9 @@ class SubscriptionPod(Pod):
                 subscription_data['rows'].append({
                     "name": "Message Set", "value": message_set["short_name"]})
                 if subscription['active'] and message_set['next_set']:
-                    actions.append(self.get_messageset_action(
-                        message_set, subscription['id']))
+                    subscription_data['actions'].append(
+                        self.get_messageset_action(
+                            message_set, subscription['id']))
             # Add the sequence number
             subscription_data['rows'].append({
                 "name": "Next Sequence Number",
@@ -79,6 +80,8 @@ class SubscriptionPod(Pod):
                 "value": subscription['active']})
             if subscription['active']:
                 active_sub_ids.append(subscription['id'])
+                subscription_data['actions'].append(
+                    self.get_cancel_action([subscription['id']]))
             # Add the completed flag
             subscription_data['rows'].append({
                 "name": "Completed",
@@ -95,17 +98,8 @@ class SubscriptionPod(Pod):
                 'subscription_ids': active_sub_ids
             }
         })
-        if len(active_sub_ids) > 0:
-            cancel_action = {
-                'type': 'cancel_subs',
-                'name': 'Cancel All Subscriptions',
-                'confirm': True,
-                'busy_text': 'Cancelling...',
-                'payload': {
-                    'subscription_ids': active_sub_ids
-                }
-            }
-            actions.append(cancel_action)
+        if len(active_sub_ids) > 1:
+            actions.append(self.get_cancel_action(active_sub_ids))
 
         content['actions'] = actions
         return content
@@ -124,6 +118,21 @@ class SubscriptionPod(Pod):
                 'new_set_name': next_set["short_name"],
                 'old_set_name': message_set["short_name"],
                 'subscription_id': subscription_id
+            }
+        }
+
+    def get_cancel_action(self, subscription_ids):
+        if len(subscription_ids) == 1:
+            text = "Cancel Subscription"
+        else:
+            text = "Cancel Subscriptions"
+        return {
+            'type': 'cancel_subs',
+            'name': text,
+            'confirm': True,
+            'busy_text': 'Cancelling...',
+            'payload': {
+                'subscription_ids': subscription_ids
             }
         }
 
