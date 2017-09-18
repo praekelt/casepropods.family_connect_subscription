@@ -47,7 +47,6 @@ class SubscriptionPodTest(BaseCasesTest):
     def subscription_callback_no_matches(self, request):
         headers = {'Content-Type': "application/json"}
         resp = {
-            'count': 0,
             'next': None,
             'previous': None,
             'results': []
@@ -57,7 +56,6 @@ class SubscriptionPodTest(BaseCasesTest):
     def subscription_filter_callback_one_match(self, request):
         headers = {'Content-Type': "application/json"}
         resp = {
-            "count": 1,
             "next": None,
             "previous": None,
             "results": [self.subscription_data]
@@ -162,7 +160,7 @@ class SubscriptionPodTest(BaseCasesTest):
                     'old_set_name': 'test_set',
                     'subscription_id': 'sub_id'
                 }
-            },{
+            }, {
                 'type': 'full_opt_out',
                 'name': 'Full Opt-Out',
                 'confirm': True,

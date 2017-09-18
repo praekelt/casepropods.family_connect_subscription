@@ -40,14 +40,14 @@ class SubscriptionPod(Pod):
         except HTTPServiceError as e:
             return {"items": [{"name": "Error", "value": e.details["detail"]}]}
 
+        data = response['results']
         # Format and return data
-        if response['count'] < 1:
+        if len(data) < 1:
             return {"items": [{
                 "rows": [{
                     "name": "No subscriptions", "value": ""
                 }]
             }]}
-        data = response["results"]
         content = {"items": []}
         active_sub_ids = []
         actions = []
