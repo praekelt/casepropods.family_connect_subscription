@@ -35,19 +35,19 @@ class SubscriptionPod(Pod):
             'identity': case.contact.uuid
         }
 
+        response = self.stage_based_messaging_api.get_subscriptions(params)
         try:
-            response = self.stage_based_messaging_api.get_subscriptions(params)
+            data = list(response['results'])
         except HTTPServiceError as e:
             return {"items": [{"name": "Error", "value": e.details["detail"]}]}
 
         # Format and return data
-        if response['count'] < 1:
+        if len(data) < 1:
             return {"items": [{
                 "rows": [{
                     "name": "No subscriptions", "value": ""
                 }]
             }]}
-        data = response["results"]
         content = {"items": []}
         active_sub_ids = []
         actions = []
